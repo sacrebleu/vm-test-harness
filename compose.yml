@@ -1,0 +1,44 @@
+services:
+  # storage - root job, must be healthy for anything else to come up
+  storage:
+    image: victoriametrics/vmstorage:v1.87.11-cluster
+    restart: always
+    command: [
+        "-storageDataPath=/metrics",
+        "-retentionPeriod=1",
+        "-dedup.minScrapeInterval=30s"
+    ]
+    ports:
+      - "${IPADDR}:8400:8400"
+      - "${IPADDR}:8401:8401"
+      - "${IPADDR}:8482:8482"
+    volumes:
+      - /Users/jeremybotha/nexmo/vicky-test-harness/data:/metrics
+  select:
+    image: victoriametrics/vmselect:v1.87.11-cluster
+    restart: always
+    command: [
+        "-storageNode=${IPADDR}:8401"
+    ]
+    ports:
+      - "${IPADDR}:8481:8481"
+  # scrape agent process - dpeends on vminsert being healthy
+  agent:
+    image: victoriametrics/vmagent:v1.77.1
+    restart: always
+    command: [
+        "-remoteWrite.url=http://${IPADDR}:8480/insert/0/prometheus/api/v1/write",
+        "-promscrape.config=/config/scrape.yml"
+    ]
+    ports:
+      - "${IPADDR}:8429:8429"
+    volumes:
+      - /Users/jeremybotha/nexmo/vicky-test-harness/config:/config
+  insert:
+    image: victoriametrics/vminsert:v1.87.11-cluster
+    restart: always
+    command: [
+        "-storageNode=${IPADDR}:8400"
+    ]
+    ports:
+      - "${IPADDR}:8480:8480"

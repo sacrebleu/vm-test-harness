@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 10s
+  scrape_timeout: 2s
+
+scrape_configs:
+  # storage node
+  - job_name: storage
+    static_configs:
+      - targets:
+        - "192.168.0.5:8482"
+
